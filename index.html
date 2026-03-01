@@ -1,0 +1,172 @@
+
+"use client"
+
+import React, { useState, useMemo } from 'react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { 
+  Wallet, 
+  Recycle, 
+  TrendingUp, 
+  QrCode, 
+  History, 
+  BrainCircuit,
+  ArrowUpRight,
+  Leaf,
+  ShieldCheck
+} from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useDoc, useFirestore } from '@/firebase';
+import { doc } from 'firebase/firestore';
+
+export default function Dashboard() {
+  const db = useFirestore();
+  // Mocking the user ID for this prototype session
+  const userId = "alex_user_123";
+  
+  const userDocRef = useMemo(() => {
+    if (!db) return null;
+    return doc(db, 'users', userId);
+  }, [db, userId]);
+
+  const { data: userData, loading } = useDoc(userDocRef);
+
+  // Fallback defaults if firestore is empty or loading
+  const stats = {
+    credits: userData?.greenCredits ?? 1250,
+    totalKg: userData?.totalKgRecycled ?? 42.5,
+    rank: (userData?.totalKgRecycled ?? 0) > 100 ? 'Gold Recycler' : 'Silver Recycler',
+    progress: Math.min(((userData?.totalKgRecycled ?? 42.5) % 100), 100)
+  };
+
+  const recentTransactions = [
+    { id: 1, type: 'Plastic', weight: 2.5, credits: 50, date: userData?.mfaVerifiedAt ? 'Just Now' : 'Today' },
+    { id: 2, type: 'Paper', weight: 5.0, credits: 75, date: 'Yesterday' },
+    { id: 3, type: 'Glass', weight: 1.2, credits: 30, date: '2 days ago' },
+  ];
+
+  return (
+    <div className="min-h-screen bg-background pb-24">
+      {/* Header */}
+      <div className="px-6 pt-8 pb-6 bg-white/40 backdrop-blur-md rounded-b-3xl sticky top-0 z-40 border-b border-primary/10">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <h2 className="text-2xl font-headline font-bold text-primary">Hello, Alex!</h2>
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Leaf className="w-3 h-3 text-accent" /> Eco-Status: {stats.rank}
+              </p>
+              <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 rounded-full text-[10px] text-green-700 font-bold">
+                <ShieldCheck className="w-3 h-3" /> MFA Active
+              </div>
+            </div>
+          </div>
+          <Avatar className="h-12 w-12 border-2 border-primary/20">
+            <AvatarImage src="https://picsum.photos/seed/user/200/200" />
+            <AvatarFallback>AX</AvatarFallback>
+          </Avatar>
+        </div>
+      </div>
+
+      <main className="px-6 mt-6 space-y-6 max-w-md mx-auto">
+        {/* Wallet & Impact Card */}
+        <Card className="bg-primary text-primary-foreground shadow-xl border-none overflow-hidden relative">
+          <div className="absolute top-[-10%] right-[-10%] w-32 h-32 bg-accent/20 rounded-full blur-3xl" />
+          <CardContent className="p-6">
+            <div className="flex justify-between items-start mb-8">
+              <div className="space-y-1">
+                <span className="text-xs font-medium uppercase tracking-wider text-primary-foreground/70">Green Credit Balance</span>
+                <div className="flex items-center gap-2">
+                  <Wallet className="w-6 h-6 text-accent" />
+                  <span className="text-4xl font-headline font-bold">
+                    {loading ? '---' : stats.credits}
+                  </span>
+                </div>
+              </div>
+              <TrendingUp className="text-accent w-8 h-8 opacity-50" />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white/10 rounded-2xl p-3 backdrop-blur-sm">
+                <span className="text-[10px] text-white/70 block mb-1">Impact Tracker</span>
+                <div className="flex items-end gap-1">
+                  <span className="text-xl font-bold">{stats.totalKg}</span>
+                  <span className="text-[10px] mb-1 font-medium">KG</span>
+                </div>
+              </div>
+              <div className="bg-white/10 rounded-2xl p-3 backdrop-blur-sm">
+                <span className="text-[10px] text-white/70 block mb-1">Progress to Gold</span>
+                <div className="mt-1">
+                  <Progress value={stats.progress} className="h-2 bg-white/20" />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* AI Insight Teaser */}
+        <Link href="/feedback">
+          <Card className="border-none shadow-sm bg-accent/10 hover:bg-accent/20 transition-colors cursor-pointer group">
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="p-3 bg-white rounded-xl shadow-sm group-hover:scale-110 transition-transform">
+                <BrainCircuit className="w-6 h-6 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-bold text-lg">Eco-Feedback AI</h4>
+                <p className="text-sm text-muted-foreground">Unlock personalized tips from your history</p>
+              </div>
+              <ArrowUpRight className="w-5 h-5 text-primary opacity-30 group-hover:opacity-100 transition-opacity" />
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* Recent Transactions */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-headline font-bold text-primary">Recent Impact</h3>
+            <Button variant="ghost" size="sm" className="text-xs text-primary font-bold">See All</Button>
+          </div>
+          
+          <div className="space-y-3">
+            {recentTransactions.map((tx) => (
+              <Card key={tx.id} className="border-none shadow-sm bg-white/60 backdrop-blur-sm hover:shadow-md transition-shadow">
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-secondary rounded-xl">
+                      <Recycle className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-md leading-none">{tx.type}</h4>
+                      <span className="text-xs text-muted-foreground">{tx.date} • {tx.weight}kg</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 font-bold text-primary">
+                    <span className="text-lg">+{tx.credits}</span>
+                    <span className="text-[10px] mb-1">GC</span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </main>
+
+      {/* Floating Bottom Nav */}
+      <nav className="fixed bottom-0 left-0 right-0 p-6 bg-white/80 backdrop-blur-lg border-t border-primary/10 shadow-lg flex items-center justify-around z-50">
+        <Link href="/dashboard" className="p-3 bg-accent/20 rounded-xl text-primary font-bold">
+          <History className="w-6 h-6" />
+        </Link>
+        <Link href="/drop-off">
+          <Button size="lg" className="h-16 w-16 rounded-2xl shadow-xl bg-primary hover:bg-primary/90 -mt-16 border-4 border-white">
+            <QrCode className="w-8 h-8 text-white" />
+          </Button>
+        </Link>
+        <Link href="/feedback" className="p-3 bg-accent/20 rounded-xl text-primary font-bold">
+          <BrainCircuit className="w-6 h-6" />
+        </Link>
+      </nav>
+    </div>
+  );
+}
